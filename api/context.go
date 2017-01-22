@@ -21,17 +21,18 @@ import (
 )
 
 type Context struct {
-	Session      model.Session
-	RequestId    string
-	IpAddress    string
-	Path         string
-	Err          *model.AppError
-	siteURL      string
-	teamURLValid bool
-	teamURL      string
-	T            goi18n.TranslateFunc
-	Locale       string
-	TeamId       string
+	Session       model.Session
+	RequestId     string
+	IpAddress     string
+	Path          string
+	Err           *model.AppError
+	siteURL       string
+	teamURLValid  bool
+	teamURL       string
+	T             goi18n.TranslateFunc
+	Locale        string
+	TeamId        string
+	isSystemAdmin bool
 }
 
 func ApiAppHandler(h func(*Context, http.ResponseWriter, *http.Request)) http.Handler {
@@ -142,7 +143,7 @@ func (h handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if utils.GetSiteURL() == "" {
-		protocol := GetProtocol(r)
+		protocol := app.GetProtocol(r)
 		c.SetSiteURL(protocol + "://" + r.Host)
 	}
 
@@ -256,14 +257,6 @@ func (h handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-func GetProtocol(r *http.Request) string {
-	if r.Header.Get(model.HEADER_FORWARDED_PROTO) == "https" {
-		return "https"
-	} else {
-		return "http"
-	}
-}
-
 func (c *Context) LogAudit(extraInfo string) {
 	audit := &model.Audit{UserId: c.Session.UserId, IpAddress: c.IpAddress, Action: c.Path, ExtraInfo: extraInfo, SessionId: c.Session.Id}
 	if r := <-app.Srv.Store.Audit().Save(audit); r.Err != nil {
@@ -345,11 +338,15 @@ func (c *Context) SystemAdminRequired() {
 		c.Err = model.NewLocAppError("", "api.context.session_expired.app_error", nil, "SystemAdminRequired")
 		c.Err.StatusCode = http.StatusUnauthorized
 		return
-	} else if !app.SessionHasPermissionTo(c.Session, model.PERMISSION_MANAGE_SYSTEM) {
+	} else if !c.IsSystemAdmin() {
 		c.Err = model.NewLocAppError("", "api.context.permissions.app_error", nil, "AdminRequired")
 		c.Err.StatusCode = http.StatusForbidden
 		return
 	}
+}
+
+func (c *Context) IsSystemAdmin() bool {
+	return app.SessionHasPermissionTo(c.Session, model.PERMISSION_MANAGE_SYSTEM)
 }
 
 func (c *Context) RemoveSessionCookie(w http.ResponseWriter, r *http.Request) {

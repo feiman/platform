@@ -40,20 +40,14 @@ const (
 
 	API_URL_SUFFIX_V1 = "/api/v1"
 	API_URL_SUFFIX_V3 = "/api/v3"
-	API_URL_SUFFIX    = API_URL_SUFFIX_V3
+	API_URL_SUFFIX_V4 = "/api/v4"
+	API_URL_SUFFIX    = API_URL_SUFFIX_V4
 )
 
 type Result struct {
 	RequestId string
 	Etag      string
 	Data      interface{}
-}
-
-type ResponseMetadata struct {
-	StatusCode int
-	Error      *AppError
-	RequestId  string
-	Etag       string
 }
 
 type Client struct {
@@ -71,7 +65,7 @@ type Client struct {
 // NewClient constructs a new client with convienence methods for talking to
 // the server.
 func NewClient(url string) *Client {
-	return &Client{url, url + API_URL_SUFFIX, &http.Client{}, "", "", "", "", "", ""}
+	return &Client{url, url + API_URL_SUFFIX_V3, &http.Client{}, "", "", "", "", "", ""}
 }
 
 func closeBody(r *http.Response) {
